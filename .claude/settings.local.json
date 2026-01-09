@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev)",
+      "Bash(nslookup:*)",
+      "Bash(sudo dscacheutil:*)",
+      "Bash(sudo killall:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
