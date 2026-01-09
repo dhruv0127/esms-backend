@@ -60,6 +60,13 @@ const cashTransactionSchema = new mongoose.Schema({
     autopopulate: true,
   },
 
+  // Reference to invoice (optional - for invoice payments)
+  invoice: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Invoice',
+    autopopulate: true,
+  },
+
   // Reference number (check number, transaction ID, etc.)
   reference: {
     type: String,

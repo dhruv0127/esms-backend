@@ -3,6 +3,8 @@ const createCRUDController = require('@/controllers/middlewaresControllers/creat
 
 const summary = require('./summary');
 const create = require('./create');
+const update = require('./update');
+const remove = require('./remove');
 
 function modelController() {
   const Model = mongoose.model('CashTransaction');
@@ -10,6 +12,8 @@ function modelController() {
 
   methods.summary = (req, res) => summary(Model, req, res);
   methods.create = create;
+  methods.update = update;
+  methods.delete = remove;
   return methods;
 }
 
