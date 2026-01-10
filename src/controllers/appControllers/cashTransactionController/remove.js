@@ -19,29 +19,57 @@ const remove = async (req, res) => {
       });
     }
 
-    // If transaction is linked to an invoice and type is 'in', reverse the credit
-    if (transaction.invoice && transaction.type === 'in') {
-      const invoice = await InvoiceModel.findById(transaction.invoice);
-      if (invoice) {
-        // Subtract the transaction amount from credit
-        const newCredit = Math.max(0, calculate.sub(invoice.credit || 0, transaction.amount));
-        const total = invoice.total || 0;
+    // If transaction type is 'in', reverse the credit
+    if (transaction.type === 'in') {
+      // If transaction is linked to a specific invoice, reverse that credit
+      if (transaction.invoice) {
+        const invoice = await InvoiceModel.findById(transaction.invoice);
+        if (invoice) {
+          const newCredit = Math.max(0, calculate.sub(invoice.credit || 0, transaction.amount));
+          const total = invoice.total || 0;
 
-        let paymentStatus = 'unpaid';
-        if (newCredit >= total) {
-          paymentStatus = 'paid';
-        } else if (newCredit > 0) {
-          paymentStatus = 'partially';
+          let paymentStatus = 'unpaid';
+          if (newCredit >= total) {
+            paymentStatus = 'paid';
+          } else if (newCredit > 0) {
+            paymentStatus = 'partially';
+          }
+
+          await InvoiceModel.findByIdAndUpdate(
+            transaction.invoice,
+            {
+              credit: newCredit,
+              paymentStatus: paymentStatus,
+            },
+            { new: true }
+          );
         }
+      }
+      // If transaction was auto-allocated, reverse those credits
+      else if (transaction.appliedToInvoices && transaction.appliedToInvoices.length > 0) {
+        for (const applied of transaction.appliedToInvoices) {
+          const invoice = await InvoiceModel.findById(applied.invoice);
+          if (invoice) {
+            const newCredit = Math.max(0, calculate.sub(invoice.credit || 0, applied.amount));
+            const total = invoice.total || 0;
 
-        await InvoiceModel.findByIdAndUpdate(
-          transaction.invoice,
-          {
-            credit: newCredit,
-            paymentStatus: paymentStatus,
-          },
-          { new: true }
-        );
+            let paymentStatus = 'unpaid';
+            if (newCredit >= total) {
+              paymentStatus = 'paid';
+            } else if (newCredit > 0) {
+              paymentStatus = 'partially';
+            }
+
+            await InvoiceModel.findByIdAndUpdate(
+              applied.invoice,
+              {
+                credit: newCredit,
+                paymentStatus: paymentStatus,
+              },
+              { new: true }
+            );
+          }
+        }
       }
     }
 

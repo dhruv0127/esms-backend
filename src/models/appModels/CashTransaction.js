@@ -57,7 +57,7 @@ const cashTransactionSchema = new mongoose.Schema({
   supplier: {
     type: mongoose.Schema.ObjectId,
     ref: 'Supplier',
-    autopopulate: true,
+  autopopulate: true,
   },
 
   // Reference to invoice (optional - for invoice payments)
@@ -66,6 +66,20 @@ const cashTransactionSchema = new mongoose.Schema({
     ref: 'Invoice',
     autopopulate: true,
   },
+
+  // Track invoices that received auto-allocated payments (when no specific invoice selected)
+  appliedToInvoices: [
+    {
+      invoice: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Invoice',
+      },
+      amount: {
+        type: Number,
+        required: true,
+      },
+    },
+  ],
 
   // Reference number (check number, transaction ID, etc.)
   reference: {

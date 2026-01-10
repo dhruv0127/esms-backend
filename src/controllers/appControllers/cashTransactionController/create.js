@@ -15,32 +15,93 @@ const create = async (req, res) => {
     // Creating a new document in the collection
     const result = await new Model(body).save();
 
-    // If this transaction is linked to an invoice and type is 'in' (cash received)
-    if (body.invoice && body.type === 'in') {
-      const invoice = await InvoiceModel.findById(body.invoice);
+    // If this transaction is type 'in' (cash received) and has a client
+    if (body.type === 'in' && body.client) {
+      // If a specific invoice is selected, apply payment to that invoice
+      if (body.invoice) {
+        const invoice = await InvoiceModel.findById(body.invoice);
 
-      if (invoice) {
-        // Add the transaction amount to invoice credit
-        const newCredit = calculate.add(invoice.credit || 0, body.amount);
-        const total = invoice.total || 0;
+        if (invoice) {
+          // Add the transaction amount to invoice credit
+          const newCredit = calculate.add(invoice.credit || 0, body.amount);
+          const total = invoice.total || 0;
 
-        // Determine new payment status
-        let paymentStatus = 'unpaid';
-        if (newCredit >= total) {
-          paymentStatus = 'paid';
-        } else if (newCredit > 0) {
-          paymentStatus = 'partially';
+          // Determine new payment status
+          let paymentStatus = 'unpaid';
+          if (newCredit >= total) {
+            paymentStatus = 'paid';
+          } else if (newCredit > 0) {
+            paymentStatus = 'partially';
+          }
+
+          // Update the invoice
+          await InvoiceModel.findByIdAndUpdate(
+            body.invoice,
+            {
+              credit: newCredit,
+              paymentStatus: paymentStatus,
+            },
+            { new: true }
+          );
+        }
+      } else {
+        // No specific invoice selected - auto-allocate to oldest unpaid invoices
+        let remainingAmount = body.amount;
+        const appliedToInvoices = [];
+
+        // Find all unpaid/partially paid invoices for this client, sorted by date (oldest first)
+        const unpaidInvoices = await InvoiceModel.find({
+          client: body.client,
+          paymentStatus: { $in: ['unpaid', 'partially'] },
+          removed: false,
+        }).sort({ date: 1 }); // Sort by date ascending (oldest first)
+
+        // Apply payment to invoices starting from oldest
+        for (const invoice of unpaidInvoices) {
+          if (remainingAmount <= 0) break;
+
+          const currentCredit = invoice.credit || 0;
+          const total = invoice.total || 0;
+          const pendingAmount = calculate.sub(total, currentCredit);
+
+          // Calculate how much to apply to this invoice
+          const amountToApply = Math.min(remainingAmount, pendingAmount);
+          const newCredit = calculate.add(currentCredit, amountToApply);
+
+          // Determine new payment status
+          let paymentStatus = 'unpaid';
+          if (newCredit >= total) {
+            paymentStatus = 'paid';
+          } else if (newCredit > 0) {
+            paymentStatus = 'partially';
+          }
+
+          // Update the invoice
+          await InvoiceModel.findByIdAndUpdate(
+            invoice._id,
+            {
+              credit: newCredit,
+              paymentStatus: paymentStatus,
+            },
+            { new: true }
+          );
+
+          // Track which invoice received payment and how much
+          appliedToInvoices.push({
+            invoice: invoice._id,
+            amount: amountToApply,
+          });
+
+          // Reduce remaining amount
+          remainingAmount = calculate.sub(remainingAmount, amountToApply);
         }
 
-        // Update the invoice
-        await InvoiceModel.findByIdAndUpdate(
-          body.invoice,
-          {
-            credit: newCredit,
-            paymentStatus: paymentStatus,
-          },
-          { new: true }
-        );
+        // Update the transaction with applied invoices tracking
+        if (appliedToInvoices.length > 0) {
+          await Model.findByIdAndUpdate(result._id, {
+            appliedToInvoices: appliedToInvoices,
+          });
+        }
       }
     }
 
