@@ -1,0 +1,11 @@
+{
+  "settingCategory": "purchase_settings",
+  "settingKey": "purchase_settings",
+  "enabled": true,
+  "value": [
+    {
+      "settingKey": "last_purchase_number",
+      "settingValue": "0"
+    }
+  ]
+}

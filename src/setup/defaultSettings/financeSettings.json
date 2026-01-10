@@ -7,6 +7,12 @@
   },
   {
     "settingCategory": "finance_settings",
+    "settingKey": "last_purchase_number",
+    "settingValue": 0,
+    "valueType": "number"
+  },
+  {
+    "settingCategory": "finance_settings",
     "settingKey": "last_quote_number",
     "settingValue": 0,
     "valueType": "number"
@@ -27,6 +33,12 @@
     "settingCategory": "finance_settings",
     "settingKey": "invoice_prefix",
     "settingValue": "inv-",
+    "valueType": "string"
+  },
+  {
+    "settingCategory": "finance_settings",
+    "settingKey": "purchase_prefix",
+    "settingValue": "pur-",
     "valueType": "string"
   },
   {
