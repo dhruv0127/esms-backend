@@ -18,6 +18,18 @@ const schema = new mongoose.Schema({
   country: String,
   address: String,
   email: String,
+  customPricing: [
+    {
+      product: {
+        type: String,
+        required: true,
+      },
+      customPrice: {
+        type: Number,
+        required: true,
+      },
+    },
+  ],
   createdBy: { type: mongoose.Schema.ObjectId, ref: 'Admin' },
   created: {
     type: Date,
