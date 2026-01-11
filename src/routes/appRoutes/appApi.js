@@ -30,4 +30,8 @@ routesList.forEach(({ entity, controllerName }) => {
   routerApp(entity, controller);
 });
 
+// Add custom report route
+const reportController = require('@/controllers/appControllers/reportController');
+router.route('/report/detailed').get(catchErrors(reportController.getDetailedReport));
+
 module.exports = router;
