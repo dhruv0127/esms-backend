@@ -6,7 +6,10 @@
       "Bash(sudo dscacheutil:*)",
       "Bash(sudo killall:*)",
       "Bash(lsof:*)",
-      "Read(//Users/dhruvparekh/Desktop/ESMS/esms/src/**)"
+      "Read(//Users/dhruvparekh/Desktop/ESMS/esms/src/**)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
