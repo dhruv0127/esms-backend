@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const Invoice = mongoose.model('Invoice');
 const Purchase = mongoose.model('Purchase');
 const CashTransaction = mongoose.model('CashTransaction');
+const ReturnExchange = mongoose.model('ReturnExchange');
 
 const getDetailedReport = async (req, res) => {
   try {
@@ -58,6 +59,15 @@ const getDetailedReport = async (req, res) => {
       .sort({ date: -1 })
       .lean();
 
+    // Fetch return/exchanges
+    const returnExchanges = await ReturnExchange.find({
+      removed: false,
+      date: { $gte: start, $lte: end },
+    })
+      .populate('customer', 'name')
+      .sort({ date: -1 })
+      .lean();
+
     // Calculate summary statistics
     const summary = {
       invoices: {
@@ -82,6 +92,17 @@ const getDetailedReport = async (req, res) => {
           .reduce((sum, ct) => sum + (ct.amount || 0), 0),
         netCash: 0, // Will be calculated below
       },
+      returnExchanges: {
+        count: returnExchanges.length,
+        returns: returnExchanges.filter((re) => re.type === 'return').length,
+        exchanges: returnExchanges.filter((re) => re.type === 'exchange').length,
+        totalReturns: returnExchanges
+          .filter((re) => re.type === 'return')
+          .reduce((sum, re) => sum + (re.returnedItem?.total || 0), 0),
+        totalExchangeDifference: returnExchanges
+          .filter((re) => re.type === 'exchange')
+          .reduce((sum, re) => sum + (re.priceDifference || 0), 0),
+      },
     };
 
     summary.cashTransactions.netCash =
@@ -100,6 +121,7 @@ const getDetailedReport = async (req, res) => {
           invoices,
           purchases,
           cashTransactions,
+          returnExchanges,
         },
       },
       message: 'Successfully fetched detailed report',
