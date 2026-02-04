@@ -23,6 +23,10 @@ const routerApp = (entity, controller) => {
   if (entity === 'quote') {
     router.route(`/${entity}/convert/:id`).get(catchErrors(controller['convert']));
   }
+
+  if ((entity === 'client' || entity === 'supplier') && controller['getBalance']) {
+    router.route(`/${entity}/balance/:id`).get(catchErrors(controller['getBalance']));
+  }
 };
 
 routesList.forEach(({ entity, controllerName }) => {
